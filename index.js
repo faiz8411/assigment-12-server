@@ -23,6 +23,8 @@ async function run() {
         const ordersCollection = database.collection('orders')
         const usersCollection = database.collection('users')
 
+        const reviewsCollection = database.collection('review')
+
 
         app.post("/addServices", async (req, res) => {
             console.log(req.body);
@@ -34,12 +36,12 @@ async function run() {
         app.get("/allProducts", async (req, res) => {
             const result = await productsCollection.find({}).limit(6).toArray();
             res.send(result);
-            console.log(result);
+            // console.log(result);
         });
         app.get("/Products", async (req, res) => {
             const result = await productsCollection.find({}).toArray();
             res.send(result);
-            console.log(result);
+            // console.log(result);
         });
 
         // get single products
@@ -53,7 +55,7 @@ async function run() {
         // confirm single order
         app.post("/confirmOrder", async (req, res) => {
             const result = await ordersCollection.insertOne(req.body);
-            console.log(result)
+            // console.log(result)
             res.send(result);
         });
 
@@ -71,6 +73,18 @@ async function run() {
 
             res.send(orders);
         });
+        // get all product orders for only admin can see
+        app.get("/allOrders", async (req, res) => {
+            let query = {}
+            const email = req.query.email
+            if (email) {
+                query = { email: email }
+            }
+
+            const result = await ordersCollection.find(query).toArray();
+            res.send(result);
+        });
+
 
         /// delete order
 
@@ -79,18 +93,61 @@ async function run() {
                 _id: ObjectId(req.params.id),
             });
             res.send(result);
-            console.log(result)
+            // console.log(result)
         });
 
         // post users
         app.post('/users', async (req, res) => {
             const user = req.body
             const result = await usersCollection.insertOne(user)
-            console.log(result)
+            // console.log(result)
             res.send(result)
         })
 
+        // upsert method
+        app.put('/users', async (req, res) => {
+            const user = req.body
 
+            const filter = { email: user.email }
+            const options = { upsert: true };
+            const updateDoc = { $set: user }
+            const result = await usersCollection.updateOne(filter, updateDoc, options)
+            // console.log(result)
+            res.send(result)
+        });
+
+        app.put('/users/admin', async (req, res) => {
+            const user = req.body
+            console.log('put', req.decodedEmail)
+            const filter = { email: user.email }
+            const updateDoc = { $set: { role: 'admin' } }
+            const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+        // checking admin
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            let isAdmin = false
+            if (user?.role === 'admin') {
+                isAdmin = true
+            }
+            res.send({ admin: isAdmin })
+        })
+        // ad review
+        app.post("/addReviews", async (req, res) => {
+            console.log(req.body);
+            const result = await reviewsCollection.insertOne(req.body);
+            res.send(result);
+        });
+
+
+        app.get("/reviews", async (req, res) => {
+            const result = await reviewsCollection.find({}).toArray();
+            res.send(result);
+            // console.log(result);
+        });
 
     } finally {
         // Ensures that the client will close when you finish/error
