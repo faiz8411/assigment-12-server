@@ -96,6 +96,20 @@ async function run() {
             // console.log(result)
         });
 
+        app.put("/updateStatus/:id", (req, res) => {
+            const id = req.params.id;
+            const updatedStatus = req.body.status;
+            const filter = { _id: ObjectId(id) };
+            console.log(updatedStatus);
+            ordersCollection
+                .updateOne(filter, {
+                    $set: { status: updatedStatus },
+                })
+                .then((result) => {
+                    res.send(result);
+                });
+        });
+
         // post users
         app.post('/users', async (req, res) => {
             const user = req.body
